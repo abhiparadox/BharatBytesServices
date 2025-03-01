@@ -52,9 +52,9 @@ paths:
             schema:
               type: object
               properties:
-                accountNumber:
+                account_number:
                   type: string
-                goldBytes:
+                goldbytes:
                   type: number
       responses:
         200:
@@ -72,9 +72,9 @@ paths:
             schema:
               type: object
               properties:
-                accountNumber:
+                walletAddress:
                   type: string
-                goldBytes:
+                goldbytes:
                   type: number
       responses:
         200:
@@ -90,11 +90,11 @@ paths:
             schema:
               type: object
               properties:
-                fromWallet:
+                from_wallet:
                   type: string
-                toWallet:
+                to_wallet:
                   type: string
-                goldBytes:
+                goldbytes:
                   type: number
       responses:
         200:

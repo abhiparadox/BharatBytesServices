@@ -3,8 +3,8 @@
     {
       "account_number": "123456",
       "wallet_address": "0x2134b393f73981A179F11132B7A9277C221D7D07",
-      "amount": 1000,
-      "goldbyte": 10,
+      "amount": 1100,
+      "goldbyte": 1830,
       "validity": 5
     }
   ]
