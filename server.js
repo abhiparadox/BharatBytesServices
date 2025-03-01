@@ -5,20 +5,23 @@ const { ethers } = require("ethers");
 const cron = require("node-cron");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const path = require("path");
 
 // Load environment variables
 const { PORT, INFURA_API_KEY, PRIVATE_KEY, CONTRACT_ADDRESS } = process.env;
-if (!INFURA_API_KEY) {
-  throw new Error("Infura API key is missing. Check your .env file.");
-}
-if (!PRIVATE_KEY) {
-  throw new Error("Private key is missing. Check your .env file.");
-}
 
 // Initialize Express app
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Load Swagger YAML file
+const swaggerDocument = YAML.load(path.join(__dirname, "swagger.yaml"));
+
+// Serve Swagger UI at /api-docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const DB_FILE = "db.json";
 
@@ -49,7 +52,6 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 async function syncGoldByteBalance(wallet_address) {
   const balance = await contract.balanceOf(wallet_address);
   const goldByte = ethers.utils.formatUnits(balance, 18);
-
   let db = loadDatabase();
   let account = db.accounts.find(
     (acc) => acc.wallet_address === wallet_address
@@ -67,7 +69,6 @@ app.post("/issue", async (req, res) => {
   let account = db.accounts.find(
     (acc) => acc.account_number === account_number
   );
-
   if (!account) return res.status(404).json({ error: "Account not found" });
 
   try {
@@ -76,11 +77,9 @@ app.post("/issue", async (req, res) => {
       ethers.utils.parseUnits(goldbytes.toString(), 18)
     );
     await tx.wait();
-
     account.goldbyte += goldbytes;
     account.validity = 5;
     saveDatabase(db);
-
     res.json({ status: "issued", goldbyte: goldbytes, validity: 5 });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -94,7 +93,6 @@ app.post("/redeem", async (req, res) => {
   let account = db.accounts.find(
     (acc) => acc.account_number === account_number
   );
-
   if (!account) return res.status(404).json({ error: "Account not found" });
 
   try {
@@ -103,7 +101,6 @@ app.post("/redeem", async (req, res) => {
       ethers.utils.parseUnits(goldbytes.toString(), 18)
     );
     await tx.wait();
-
     await syncGoldByteBalance(account.wallet_address);
     res.json({ status: "redeemed", goldbyte: goldbytes });
   } catch (error) {
@@ -122,10 +119,8 @@ app.post("/transfer", async (req, res) => {
       ethers.utils.parseUnits(goldbytes.toString(), 18)
     );
     await tx.wait();
-
     await syncGoldByteBalance(from_wallet);
     await syncGoldByteBalance(to_wallet);
-
     res.json({ status: "transferred", goldbyte: goldbytes });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -139,7 +134,6 @@ app.get("/account/:account_number", async (req, res) => {
   let account = db.accounts.find(
     (acc) => acc.account_number === account_number
   );
-
   if (!account) return res.status(404).json({ error: "Account not found" });
 
   await syncGoldByteBalance(account.wallet_address);
@@ -149,10 +143,8 @@ app.get("/account/:account_number", async (req, res) => {
 // Cron job to decrease validity and auto-settle expired tokens
 cron.schedule("0 0 * * *", async () => {
   let db = loadDatabase();
-
   for (let account of db.accounts) {
     account.validity = Math.max(0, account.validity - 1);
-
     if (account.validity === 0) {
       try {
         const tx = await contract.autoSettle(account.wallet_address);
@@ -163,7 +155,6 @@ cron.schedule("0 0 * * *", async () => {
       }
     }
   }
-
   saveDatabase(db);
   console.log("Validity updated and expired tokens settled.");
 });
@@ -171,4 +162,5 @@ cron.schedule("0 0 * * *", async () => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });

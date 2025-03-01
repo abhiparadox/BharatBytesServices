@@ -1,0 +1,103 @@
+openapi: 3.0.0
+info:
+  title: GoldByte API
+  description: API for managing GoldByte token transactions
+  version: 1.0.0
+
+servers:
+  - url: https://bharatbytesservices-1.onrender.com
+    description: Production Server
+  - url: http://localhost:3000
+    description: Local Development Server
+
+paths:
+  /account/{accountNumber}:
+    get:
+      summary: Get account details by account number
+      parameters:
+        - name: accountNumber
+          in: path
+          required: true
+          description: Account number to fetch details
+          schema:
+            type: string
+      responses:
+        200:
+          description: Account details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountNumber:
+                    type: string
+                  walletAddress:
+                    type: string
+                  amount:
+                    type: number
+                  goldBytes:
+                    type: number
+                  validity:
+                    type: number
+        404:
+          description: Account not found
+
+  /redeem:
+    post:
+      summary: Redeem GoldBytes and update the database
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountNumber:
+                  type: string
+                goldBytes:
+                  type: number
+      responses:
+        200:
+          description: GoldBytes redeemed successfully
+        400:
+          description: Insufficient balance or invalid account
+
+  /issue:
+    post:
+      summary: Issue new GoldBytes to an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accountNumber:
+                  type: string
+                goldBytes:
+                  type: number
+      responses:
+        200:
+          description: GoldBytes issued successfully
+
+  /transfer:
+    post:
+      summary: Transfer GoldBytes between wallets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromWallet:
+                  type: string
+                toWallet:
+                  type: string
+                goldBytes:
+                  type: number
+      responses:
+        200:
+          description: Transfer successful
+        400:
+          description: Insufficient balance or invalid wallets
